@@ -104,42 +104,42 @@ resource "aws_security_group" "ec2_sg" {
 
 # ICMPを許可
 resource "aws_security_group_rule" "icmp" {
-    type              = "ingress"
-    from_port         = -1
-    to_port           = -1
-    protocol          = "icmp"
-    cidr_blocks       = ["0.0.0.0/0"]
-    security_group_id = "${aws_security_group.ec2_sg.id}"
+    type                = "ingress"
+    from_port           = -1
+    to_port             = -1
+    protocol            = "icmp"
+    cidr_blocks         = ["0.0.0.0/0"]
+    security_group_id   = "${aws_security_group.ec2_sg.id}"
 }
 
 # sshを許可
 resource "aws_security_group_rule" "ssh" {
-    type              = "ingress"
-    from_port         = 22
-    to_port           = 22
-    protocol          = "tcp"
-    cidr_blocks       = ["0.0.0.0/0"]
-    security_group_id = "${aws_security_group.ec2_sg.id}"
+    type                = "ingress"
+    from_port           = 22
+    to_port             = 22
+    protocol            = "tcp"
+    cidr_blocks         = ["0.0.0.0/0"]
+    security_group_id   = "${aws_security_group.ec2_sg.id}"
 }
 
 # httpを許可
 resource "aws_security_group_rule" "web" {
-    type              = "ingress"
-    from_port         = 80
-    to_port           = 80
-    protocol          = "tcp"
-    cidr_blocks       = ["0.0.0.0/0"]
-    security_group_id = "${aws_security_group.ec2_sg.id}"
+    type                = "ingress"
+    from_port           = 80
+    to_port             = 80
+    protocol            = "tcp"
+    cidr_blocks         = ["0.0.0.0/0"]
+    security_group_id   = "${aws_security_group.ec2_sg.id}"
 }
 
 # Outboundを明示的に作成しないといけない
 resource "aws_security_group_rule" "all" {
-    type              = "egress"
-    from_port         = 0
-    to_port           = 65535
-    protocol          = "tcp"
-    cidr_blocks       = ["0.0.0.0/0"]
-    security_group_id = "${aws_security_group.ec2_sg.id}"
+    type                = "egress"
+    from_port           = 0
+    to_port             = 65535
+    protocol            = "-1"
+    cidr_blocks         = ["0.0.0.0/0"]
+    security_group_id   = "${aws_security_group.ec2_sg.id}"
 }
 
 #=============================================================================
@@ -155,14 +155,31 @@ resource "aws_security_group" "rds_sg" {
 }
 
 resource "aws_security_group_rule" "db" {
-    type                     = "ingress"
-    from_port                = 5432
-    to_port                  = 5432
-    protocol                 = "tcp"
-    #source_security_group_id = "${aws_security_group.ec2_sg.id}"
-    #cidr_blocks              = ["10.6.1.0/24", "10.6.2.0/24"]
-    cidr_blocks              = ["${aws_subnet.subnet_public1.cidr_block}", "${aws_subnet.subnet_public2.cidr_block}"]
-    security_group_id        = "${aws_security_group.rds_sg.id}"
+    type                = "ingress"
+    from_port           = 5432
+    to_port             = 5432
+    protocol            = "tcp"
+    cidr_blocks         = ["${aws_subnet.subnet_public1.cidr_block}", "${aws_subnet.subnet_public2.cidr_block}"]
+    security_group_id   = "${aws_security_group.rds_sg.id}"
+}
+
+resource "aws_security_group_rule" "rds_sg_inbound_icmp" {
+    type                = "ingress"
+    from_port           = -1
+    to_port             = -1
+    protocol            = "icmp"
+    cidr_blocks         = ["0.0.0.0/0"]
+    security_group_id   = "${aws_security_group.rds_sg.id}"
+}
+
+# Outboundを明示的に作成しないといけない
+resource "aws_security_group_rule" "rds_sg_outbound_icmp" {
+    type                = "egress"
+    from_port           = -1
+    to_port             = -1
+    protocol            = "icmp"
+    cidr_blocks         = ["0.0.0.0/0"]
+    security_group_id   = "${aws_security_group.rds_sg.id}"
 }
 
 #=============================================================================
