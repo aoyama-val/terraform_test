@@ -2,6 +2,10 @@
 #   EC2 + RDS構成用のVPC、サブネット等一式をつくる
 #=============================================================================
 
+# 変数定義
+variable "system_name" {
+    default = "aoyamatest"
+}
 
 # 環境変数 AWS_ACCESS_KEY_ID と AWS_SECRET_ACCESS_KEY が参照される
 provider "aws" {
@@ -11,78 +15,103 @@ provider "aws" {
 #=============================================================================
 #   VPC, Subnet
 #=============================================================================
-resource "aws_vpc" "aoyama-tf-vpc" {
+resource "aws_vpc" "vpc1" {
     cidr_block           = "10.6.0.0/16"
     instance_tenancy     = "default"
     enable_dns_support   = true
     enable_dns_hostnames = true
     tags {
-        Name = "aoyama-tf-vpc"
+        Name = "${var.system_name}-vpc"
     }
 }
 
-resource "aws_subnet" "public_web" {
-    vpc_id                  = "${aws_vpc.aoyama-tf-vpc.id}"
+resource "aws_subnet" "subnet_public1" {
+    vpc_id                  = "${aws_vpc.vpc1.id}"
     cidr_block              = "10.6.1.0/24"
     availability_zone       = "ap-northeast-1a"
     map_public_ip_on_launch = true
     tags {
-        Name = "aoyama-tf-vpc-public1"
+        Name = "${var.system_name}-public1"
     }
 }
 
-resource "aws_subnet" "private_db1" {
-    vpc_id            = "${aws_vpc.aoyama-tf-vpc.id}"
+resource "aws_subnet" "subnet_public2" {
+    vpc_id                  = "${aws_vpc.vpc1.id}"
+    cidr_block              = "10.6.2.0/24"
+    availability_zone       = "ap-northeast-1c"
+    map_public_ip_on_launch = true
+    tags {
+        Name = "${var.system_name}-public2"
+    }
+}
+
+
+resource "aws_subnet" "subnet_private1" {
+    vpc_id            = "${aws_vpc.vpc1.id}"
     cidr_block        = "10.6.3.0/24"
     availability_zone = "ap-northeast-1a"
     tags {
-        Name = "aoyama-tf-vpc-private1"
+        Name = "${var.system_name}-private1"
     }
 }
 
-resource "aws_subnet" "private_db2" {
-    vpc_id            = "${aws_vpc.aoyama-tf-vpc.id}"
+resource "aws_subnet" "subnet_private2" {
+    vpc_id            = "${aws_vpc.vpc1.id}"
     cidr_block        = "10.6.4.0/24"
     availability_zone = "ap-northeast-1c"
     tags {
-        Name = "aoyama-tf-vpc-private2"
+        Name = "${var.system_name}-private2"
     }
 }
 
-# 
-resource "aws_internet_gateway" "gw" {
-    vpc_id = "${aws_vpc.aoyama-tf-vpc.id}"
+resource "aws_internet_gateway" "gw1" {
+    vpc_id = "${aws_vpc.vpc1.id}"
     tags {
-        Name = "tf-gw"
+        Name = "${var.system_name}-gw"
     }
 }
 
-resource "aws_route_table" "public_rtb" {
-    vpc_id = "${aws_vpc.aoyama-tf-vpc.id}"
+resource "aws_route_table" "public_rtb1" {
+    vpc_id = "${aws_vpc.vpc1.id}"
     route {
         cidr_block = "0.0.0.0/0"
-        gateway_id = "${aws_internet_gateway.gw.id}"
+        gateway_id = "${aws_internet_gateway.gw1.id}"
     }
     tags {
-        Name = "tf_rtb"
+        Name = "${var.system_name}-rtb"
     }
 }
 
-resource "aws_route_table_association" "public_a" {
-    subnet_id      = "${aws_subnet.public_web.id}"
-    route_table_id = "${aws_route_table.public_rtb.id}"
+resource "aws_route_table_association" "route_table_association_public1" {
+    subnet_id      = "${aws_subnet.subnet_public1.id}"
+    route_table_id = "${aws_route_table.public_rtb1.id}"
 }
 
-#=============================================================================
-#   セキュリティグループ app
-#=============================================================================
-resource "aws_security_group" "app" {
-    name        = "tf_web"
-    description = "It is a security group on http of aoyama-tf-vpc"
-    vpc_id      = "${aws_vpc.aoyama-tf-vpc.id}"
+resource "aws_route_table_association" "route_table_association_public2" {
+    subnet_id      = "${aws_subnet.subnet_public2.id}"
+    route_table_id = "${aws_route_table.public_rtb1.id}"
+}
+
+##=============================================================================
+##   セキュリティグループ app
+##=============================================================================
+resource "aws_security_group" "ec2_sg" {
+    name        = "${var.system_name}-sg"
+    description = "for EC2"
+    vpc_id      = "${aws_vpc.vpc1.id}"
     tags {
-        Name = "tf_web"
+        Name = "${var.system_name}-sg"
     }
+}
+
+# ICMPを許可
+resource "aws_security_group_rule" "icmp" {
+    type              = "ingress"
+    from_port         = -1
+    to_port           = -1
+    protocol          = "icmp"
+    cidr_blocks       = ["0.0.0.0/0"]
+    security_group_id = "${aws_security_group.ec2_sg.id}"
 }
 
 # sshを許可
@@ -92,7 +121,7 @@ resource "aws_security_group_rule" "ssh" {
     to_port           = 22
     protocol          = "tcp"
     cidr_blocks       = ["0.0.0.0/0"]
-    security_group_id = "${aws_security_group.app.id}"
+    security_group_id = "${aws_security_group.ec2_sg.id}"
 }
 
 # httpを許可
@@ -102,7 +131,7 @@ resource "aws_security_group_rule" "web" {
     to_port           = 80
     protocol          = "tcp"
     cidr_blocks       = ["0.0.0.0/0"]
-    security_group_id = "${aws_security_group.app.id}"
+    security_group_id = "${aws_security_group.ec2_sg.id}"
 }
 
 # Outboundを明示的に作成しないといけない
@@ -112,38 +141,40 @@ resource "aws_security_group_rule" "all" {
     to_port           = 65535
     protocol          = "tcp"
     cidr_blocks       = ["0.0.0.0/0"]
-    security_group_id = "${aws_security_group.app.id}"
+    security_group_id = "${aws_security_group.ec2_sg.id}"
 }
 
 #=============================================================================
 #   セキュリティグループ db
 #=============================================================================
-resource "aws_security_group" "db" {
-    name        = "db_server"
-    description = "It is a security group on db of aoyama-tf-vpc."
-    vpc_id      = "${aws_vpc.aoyama-tf-vpc.id}"
+resource "aws_security_group" "rds_sg" {
+    name        = "${var.system_name}-rds-sg"
+    description = "for RDS"
+    vpc_id      = "${aws_vpc.vpc1.id}"
     tags {
-        Name = "tf_db"
+        Name = "${var.system_name}-rds-sg"
     }
 }
 
 resource "aws_security_group_rule" "db" {
     type                     = "ingress"
-    from_port                = 3306
-    to_port                  = 3306
+    from_port                = 5432
+    to_port                  = 5432
     protocol                 = "tcp"
-    source_security_group_id = "${aws_security_group.app.id}"
-    security_group_id        = "${aws_security_group.db.id}"
+    #source_security_group_id = "${aws_security_group.ec2_sg.id}"
+    #cidr_blocks              = ["10.6.1.0/24", "10.6.2.0/24"]
+    cidr_blocks              = ["${aws_subnet.subnet_public1.cidr_block}", "${aws_subnet.subnet_public2.cidr_block}"]
+    security_group_id        = "${aws_security_group.rds_sg.id}"
 }
 
 #=============================================================================
 #   DBサブネットグループ
 #=============================================================================
-resource "aws_db_subnet_group" "main" {
-    name        = "tf_dbsubnet"
-    description = "It is a DB subnet group on aoyama-tf-vpc."
-    subnet_ids  = ["${aws_subnet.private_db1.id}", "${aws_subnet.private_db2.id}"]
+resource "aws_db_subnet_group" "db_subnet_group" {
+    name        = "${var.system_name}-db-sg"
+    description = "for RDS"
+    subnet_ids  = ["${aws_subnet.subnet_private1.id}", "${aws_subnet.subnet_private2.id}"]
     tags {
-        Name = "tf_dbsubnet"
+        Name = "${var.system_name}-db-sg"
     }
 }
