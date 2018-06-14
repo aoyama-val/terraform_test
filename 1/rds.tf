@@ -15,4 +15,5 @@ resource "aws_db_instance" "db" {
     db_subnet_group_name    = "${aws_db_subnet_group.db_subnet_group.name}"
     multi_az                = false
     availability_zone       = "ap-northeast-1a"
+    skip_final_snapshot     = true
 }
