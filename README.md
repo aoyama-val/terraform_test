@@ -24,6 +24,8 @@ terraform destroy
 # terraform importで既存リソースをインポートできるらしい
 
 # terraform workspaceで複数環境を切り替えられるらしい
+# しかし terraform.tfvars で system_name に -staging などとつけるだけでいいという気も…
+# 
 # https://qiita.com/takachan/items/73407a54c0b5e1dbb48d
 # terraform envはterraform workspaceの古い名前でdeprecated
 ```
