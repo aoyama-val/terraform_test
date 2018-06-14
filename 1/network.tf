@@ -3,9 +3,7 @@
 #=============================================================================
 
 # 変数定義
-variable "system_name" {
-    default = "aoyamatest"
-}
+variable "system_name" {}
 
 # 環境変数 AWS_ACCESS_KEY_ID と AWS_SECRET_ACCESS_KEY が参照される
 provider "aws" {
