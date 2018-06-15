@@ -1,9 +1,8 @@
 VPC
-    public subnet1
-    public subnet2
-    private subnet1
-    private subnet2
-    RDS
+    public subnet1 / public subnet2
+        EC2
+    private subnet1 / private subnet2
+        RDS
 を作成する設定のサンプル。
 
 このディレクトリで
