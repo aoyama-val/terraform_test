@@ -1,9 +1,20 @@
+```
 VPC
     public subnet1 / public subnet2
         EC2
     private subnet1 / private subnet2
         RDS
-を作成する設定のサンプル。
+```
+
+という構成を作成する設定のサンプル。
+
+実行前に最低限terraform.tfvarsの
+
+```
+aws_key_name = "val00362_keypair"
+```
+
+の部分だけ変更しといてください。
 
 このディレクトリで
 

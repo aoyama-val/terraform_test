@@ -9,6 +9,11 @@ terraform version
 terraform init
 ```
 
+# 実行方法
+
+`./1/README.md` を読んでください。
+
+# terraformのコマンド
 
 ```
 # dry run
@@ -16,6 +21,7 @@ terraform plan
 
 # 実行
 terraform apply
+# 実行（y/nで聞かれるところを全部yにする）
 terraform apply -auto-approve
 
 # 全削除
